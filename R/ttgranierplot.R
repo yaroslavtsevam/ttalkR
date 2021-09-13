@@ -1,4 +1,4 @@
-ttgranier <- function(mydata_4D, plot_label) {
+ttgranierplot <- function(mydata_4D, plot_label) {
   #example call ttgranier(mydata_4D, "split")
 
   #load required packages
@@ -137,7 +137,8 @@ ttgranier <- function(mydata_4D, plot_label) {
   for (j in 1:(length(ID))) {
     #dTmax[mydata_4D$TT_ID == ID[j]] <- (dTon[mydata_4D$TT_ID == ID[j]]  - dToff[mydata_4D$TT_ID == ID[j]] )
     df <-
-      data.frame(dTmax[mydata_4D$TT_ID == ID[j]], mydata_4D$SDate[mydata_4D$TT_ID == ID[j]])
+      data.frame(dTmax[mydata_4D$TT_ID == ID[j]],
+                 mydata_4D$SDate[mydata_4D$TT_ID == ID[j]])
     colnames(df) <- c("dTmax", "Date")
     if (length(na.omit(df$dTmax)) < 11) {
       next()
@@ -177,8 +178,7 @@ ttgranier <- function(mydata_4D, plot_label) {
       baytrends::fillMissing(ts,
                              span = 24,
                              Dates = NULL,
-                             max.fill = 12)
-    #gapfillSSA(series = ts, plot.results = FALSE, open.plot = FALSE)
+                             max.fill = 12)#gapfillSSA(series = ts, plot.results = FALSE, open.plot = FALSE)
     #ts_filt <- ts_filt[[1]]
     #apply a hampel filter
     #ts_filt <- hampel(ts_filt, 24, 3)
@@ -190,6 +190,41 @@ ttgranier <- function(mydata_4D, plot_label) {
   #create a data frame for plotting
   df1 <- data.frame(mydata_4D$Timestamp, Fd, mydata_4D$id_col_ind)
   colnames(df1) <- c("Timestamp", "Fd", "id_col_ind")
+
+
+
+  if (plot_label == "all_in_one"){
+    p <- ggplot(data = df1, aes(Timestamp, Fd)) +
+      geom_point(aes(colour = id_col_ind), size = 0.2) +
+      #geom_smooth(formula = y ~ s(x, bs = "ds")) +
+      geom_smooth() +
+      #geom_ma(ma_fun = SMA, n = 1000, color = "red") +
+      scale_color_gradientn(colours = hcl.colors(30, palette = "viridis")) +
+      labs(x = "Timestamp", y = "sap flow (g m-2 s-1)") +
+      #labs(title = site) +
+      scale_x_datetime(minor_breaks = ("1 week")) +
+      theme(legend.position = "none") +
+      ylim(0, 5)  #quantile(Fd, p = 0.99, na.rm=T))
+      print(p)
+  }
+
+
+
+  if (plot_label == "split"){
+    p <- ggplot(data = df1, aes(Timestamp, Fd, color = id_col_ind)) +
+      geom_point(aes(group = "whatever"), size = 0.2) +
+      #geom_line(aes(group = "whatever")) +
+      facet_grid(facets = mydata_4D$TT_ID ~ ., margins = FALSE) +
+      geom_smooth(colour = "gray") +
+      #binomial_smooth(formula = y ~ splines::ns(x, 2)) +
+      labs(x = "Timestamp", y = "sap flow (g m-2 s-1)") +
+      scale_color_gradientn(colours = hcl.colors(30, palette = "viridis")) +
+      scale_x_datetime(minor_breaks = ("1 week")) +
+      theme(legend.position = "none") +
+      theme(strip.text.y = element_text(angle = 0, hjust = 0)) +
+      ylim(0, 5)  #quantile(Fd, p = 0.99, na.rm=T))
+    print(p)
+  }
 
   if (plot_label == "none"){}
 
@@ -210,12 +245,6 @@ ttgranier <- function(mydata_4D, plot_label) {
   #  group_by(Day) %>%
   #  summarize(mean = median(phi, na.rm = TRUE))
   #colnames(mydata_daily) <- c("date", "phi")
-
-
-  #create a data frame for output
-  df_ttgranier <- data.frame(mydata_4D$Timestamp, Fd, mydata_4D$TT_ID)
-  colnames(df_ttgranier) <- c("Timestamp", "Fd", "TT_ID")
-  return(df_ttgranier)
 
 
 }

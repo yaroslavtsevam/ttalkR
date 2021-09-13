@@ -1,4 +1,4 @@
-ttgrowth <- function(mydata_4D) { #this is a beta function
+ttgrowthplot <- function(mydata_4D, plot_label) { #this is a beta function
   #example call ttgrowth(mydata_4D, "all_in_one")
 
   #load required packages
@@ -9,11 +9,14 @@ ttgrowth <- function(mydata_4D) { #this is a beta function
 
   #create a color index
   id_col <- mydata_4D$TT_ID
-  id_col_ind <- data.frame(unique(id_col), 1:length(unique(id_col))); colnames(id_col_ind) <- c("TT_ID", "ID")
+  id_col_ind <- data.frame(unique(id_col), 1:length(unique(id_col)));
+  colnames(id_col_ind) <- c("TT_ID", "ID")
   #create index for color scale
   mydata_4D$id_col_ind <- mydata_4D$TT_ID
   for (i in 1:length(id_col_ind$ID)){
-    mydata_4D$id_col_ind <- replace(mydata_4D$id_col_ind, mydata_4D$id_col_ind==id_col_ind$TT_ID[i], id_col_ind$ID[i])
+    mydata_4D$id_col_ind <- replace(mydata_4D$id_col_ind,
+                                    mydata_4D$id_col_ind==id_col_ind$TT_ID[i],
+                                    id_col_ind$ID[i])
   }
 
 
@@ -111,9 +114,35 @@ ttgrowth <- function(mydata_4D) { #this is a beta function
   df1 <- data.frame(mydata_4D$Timestamp, mydata_4D$dendro, mydata_4D$id_col_ind)
   colnames(df1) <- c("Timestamp", "dendrometer", "id_col_ind")
 
-  #create a data frame for output
-  df_ttgrowth <- data.frame(mydata_4D$Timestamp, mydata_4D$dendro, mydata_4D$TT_ID)
-  colnames(df_ttgrowth) <- c("Timestamp", "phi", "TT_ID")
-  df_ttgrowth <<- df_ttgrowth
 
+
+  if (plot_label == "all_in_one"){
+    p <- ggplot(data = df1, aes(Timestamp, dendrometer)) +
+      geom_point(aes(colour = id_col_ind), size = 0.2) +
+      scale_color_gradientn(colours = hcl.colors(30, palette = "viridis")) +
+      labs(x = "Timestamp", y = "increment (mm)") +
+      #labs(title = site) +
+      scale_x_datetime(minor_breaks = ("1 week")) +
+      theme(legend.position = "none") +
+      ylim(quantile(df1$dendrometer, p = 0.01, na.rm=T), quantile(df1$dendrometer, p = 0.99, na.rm=T))
+    print(p)
+  }
+
+
+
+  if (plot_label == "split"){
+    p <- ggplot(data = df1, aes(Timestamp, dendrometer, color = id_col_ind)) +
+      geom_point(aes(group = "whatever"), size = 0.2) +
+      #geom_line(aes(group = "whatever")) +
+      facet_grid(facets = mydata_4D$TT_ID ~ ., margins = FALSE) +
+      labs(x = "Timestamp", y = "increment (mm)") +
+      scale_color_gradientn(colours = hcl.colors(30, palette = "viridis")) +
+      scale_x_datetime(minor_breaks = ("1 week")) +
+      theme(legend.position = "none") +
+      theme(strip.text.y = element_text(angle = 0, hjust = 0)) +
+      ylim(quantile(df1$dendrometer, p = 0.01, na.rm=T), quantile(df1$dendrometer, p = 0.99, na.rm=T))
+    print(p)
+  }
+
+  if (plot_label == "none"){}
 }
